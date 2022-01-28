@@ -1,0 +1,1 @@
+pyinstaller --onefile --windowed --ico emex.ico --add-data "emex.ico;." --name emex_parser app.py
