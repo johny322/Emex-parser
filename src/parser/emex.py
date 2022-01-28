@@ -7,6 +7,8 @@ import pandas as pd
 
 import requests
 import urllib.request
+
+from fake_headers import Headers
 from requests import ConnectTimeout, Timeout
 from requests.exceptions import ProxyError
 
@@ -165,12 +167,13 @@ class Emex:
             url = f'https://emex.ru/api/search/search?detailNum={num}&locationId=29084&showAll=true' \
                   f'&longitude=37.617635&latitude=55.755814'
             json_data = self.get_json_data(url, proxy)
-            if not json_data:
+            if json_data is None:
                 info_label_thread.info_message = f'Не удалось получить данные для {num}'
                 info_label_thread.start()
                 progress_bar_value_thread.start()
                 continue
             try:
+                print(json_data)
                 self.get_details(json_data,
                                  self.settings['providers'],
                                  self.settings['rating'],
@@ -221,24 +224,26 @@ class Emex:
             log_error(log_path)
 
     def get_json_data(self, url, proxy=''):
+        headers = Headers(headers=True).generate()
         if self.settings['bright_data_proxy'] or self.settings['proxy_manager']:
             proxies = {
                 "http": proxy.strip(),
                 "https": proxy.strip()
             }
             try:
-                r = requests.get(url, proxies=proxies, timeout=2)
+                r = requests.get(url, headers=headers, proxies=proxies, timeout=3)
+                self.create_opener_count = 0
                 return r.json()
             except (ConnectTimeout, Timeout):
                 self.create_opener_count += 1
-                if self.create_opener_count > 2:
+                if self.create_opener_count > 3:
                     self.create_opener_count = 0
-                    return
-                self.get_json_data(url, proxy)
+                    return None
+                return self.get_json_data(url, proxy)
             except Exception:
                 traceback.print_exc()
                 log_error(log_path)
-                return
+                return None
         else:
             try:
                 if proxy:
@@ -251,10 +256,10 @@ class Emex:
                     r = requests.get(url, timeout=2)
                 return r.json()
             except (ConnectTimeout, Timeout):
-                return
+                return None
             except Exception:
                 log_error(log_path)
-                return
+                return None
 
     def get_data(self, path):
         with open(path, 'r', encoding='utf-8') as f:
@@ -291,7 +296,7 @@ class Emex:
                       f'&longitude=37.617635&latitude=55.755814'
                 # print(url)
                 new_json_data = self.get_json_data(url)
-                if not new_json_data:
+                if new_json_data is None:
                     continue
                 self.get_detail_data(new_json_data, providers, rating, with_analogs, columns, values)
         else:

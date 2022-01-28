@@ -3,3 +3,4 @@ pandas==1.4.0
 XlsxWriter==3.0.2
 openpyxl==3.0.9
 PyQt5==5.15.6
+fake-headers==1.0.2
