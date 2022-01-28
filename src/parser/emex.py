@@ -71,6 +71,18 @@ def check_proxy_validity(proxy):
         return message
 
 
+def check_breight_data_proxy(proxy):
+    proxies = {
+        'http': proxy.strip(),
+        'https': proxy.strip()
+    }
+    try:
+        requests.get('https://icanhazip.com/', proxies=proxies, timeout=2)
+        return True
+    except Exception:
+        return False
+
+
 def get_bright_data_proxy(proxy_path):
     with open(proxy_path) as file:
         proxy = file.read()
@@ -105,17 +117,7 @@ class Emex:
         self.no_results_count = 0
         self.previous_no_results_index = -1
         self.create_opener_count = 0
-        self.start_time = time.time()
-
-    def create_opener(self, bright_data_proxy):
-        self.opener = urllib.request.build_opener(
-            urllib.request.ProxyHandler(
-                {
-                    'http': bright_data_proxy,
-                    'https': bright_data_proxy
-                }
-            ))
-        # self.opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36')]
+        # self.start_time = time.time()
 
     def excel_iter(self, start_index=0):
         excel_path = self.settings['excel_path']
@@ -123,9 +125,20 @@ class Emex:
         proxy_path = self.settings['proxy_path']
         df = pd.read_excel(excel_path)
         if proxy_path:
-            if self.settings['bright_data_proxy']:
+            if self.settings['bright_data_proxy'] or self.settings['proxy_manager']:
                 proxy = get_bright_data_proxy(proxy_path)
-                self.create_opener(proxy)
+                if not check_breight_data_proxy(proxy):
+                    if self.settings['proxy_manager']:
+                        text = 'Не удалось подключиться к прокси\n' \
+                               'Убедитесь, что Proxy Manager запущен. Проверьте порт'
+                    else:
+                        text = 'Не удалось подключиться к прокси\n' \
+                               'Проверьте ссылку на прокси'
+                    # print(text)
+                    info_label_thread.info_message = text
+                    info_label_thread.start()
+                    time.sleep(1)
+                    return
             else:
                 proxy = get_proxy_from_file(1, proxy_path)
                 if not proxy:
@@ -183,7 +196,7 @@ class Emex:
                     warning_message_thread.text_message = 'Блокировка'
                     warning_message_thread.start()
                 return
-        print(f'TIME: {time.time() - self.start_time}')
+        # print(f'TIME: {time.time() - self.start_time}')
         try:
             self.ex.write_exel(save_path, (True, 'max'))
         except PermissionError:
@@ -208,25 +221,24 @@ class Emex:
             log_error(log_path)
 
     def get_json_data(self, url, proxy=''):
-        if self.settings['bright_data_proxy']:
+        if self.settings['bright_data_proxy'] or self.settings['proxy_manager']:
+            proxies = {
+                "http": proxy.strip(),
+                "https": proxy.strip()
+            }
             try:
-                res = self.opener.open(url, timeout=2).read()
-                # print(self.opener.open('http://lumtest.com/myip.json').read())
-                json_data = json.loads(res.decode("utf-8"))
-                self.create_opener_count = 0
-                return json_data
-            except Exception as e:
-                if str(e).__contains__('timed out'):
-                    self.create_opener_count += 1
-                    # print(self.create_opener_count)
-                    if self.create_opener_count > 2:
-                        self.create_opener_count = 0
-                        return
-                    # self.create_opener(proxy)
-                    self.get_json_data(url, proxy)
-                else:
-                    log_error(log_path)
+                r = requests.get(url, proxies=proxies, timeout=2)
+                return r.json()
+            except (ConnectTimeout, Timeout):
+                self.create_opener_count += 1
+                if self.create_opener_count > 2:
+                    self.create_opener_count = 0
                     return
+                self.get_json_data(url, proxy)
+            except Exception:
+                traceback.print_exc()
+                log_error(log_path)
+                return
         else:
             try:
                 if proxy:
@@ -238,9 +250,7 @@ class Emex:
                 else:
                     r = requests.get(url, timeout=2)
                 return r.json()
-            except ConnectTimeout:
-                return
-            except Timeout:
+            except (ConnectTimeout, Timeout):
                 return
             except Exception:
                 log_error(log_path)
