@@ -83,7 +83,7 @@ def check_bright_data_proxy(proxy):
         'https': proxy.strip()
     }
     try:
-        requests.get('https://icanhazip.com/', proxies=proxies, timeout=2)
+        requests.get('https://icanhazip.com/', proxies=proxies, timeout=2, verify=False)
         return True
     except Exception:
         log_error(log_path)
@@ -236,7 +236,7 @@ class Emex:
                 "https": proxy.strip()
             }
             try:
-                r = requests.get(url, headers=headers, proxies=proxies, timeout=3)
+                r = requests.get(url, headers=headers, proxies=proxies, timeout=3, verify=False)
                 self.create_opener_count = 0
                 return r.json()
             except (ConnectTimeout, Timeout):
