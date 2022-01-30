@@ -39,7 +39,11 @@ def get_proxy_from_file(limit: int, proxy_path):
         else:
             proxy = '1-' + proxy
         p = re.sub(pattern, '', proxy).strip()
-        is_validity = check_proxy_validity(p)
+        try:
+            is_validity = check_proxy_validity(p)
+        except:
+            log_error(log_path)
+            return ''
         if isinstance(is_validity, bool):
             work_proxy = p
         else:
@@ -73,7 +77,7 @@ def check_proxy_validity(proxy):
         return message
 
 
-def check_breight_data_proxy(proxy):
+def check_bright_data_proxy(proxy):
     proxies = {
         'http': proxy.strip(),
         'https': proxy.strip()
@@ -82,6 +86,7 @@ def check_breight_data_proxy(proxy):
         requests.get('https://icanhazip.com/', proxies=proxies, timeout=2)
         return True
     except Exception:
+        log_error(log_path)
         return False
 
 
@@ -129,7 +134,7 @@ class Emex:
         if proxy_path:
             if self.settings['bright_data_proxy'] or self.settings['proxy_manager']:
                 proxy = get_bright_data_proxy(proxy_path)
-                if not check_breight_data_proxy(proxy):
+                if not check_bright_data_proxy(proxy):
                     if self.settings['proxy_manager']:
                         text = 'Не удалось подключиться к прокси\n' \
                                'Убедитесь, что Proxy Manager запущен. Проверьте порт'
