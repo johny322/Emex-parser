@@ -178,7 +178,7 @@ class Emex:
                 progress_bar_value_thread.start()
                 continue
             try:
-                print(json_data)
+                # print(json_data)
                 self.get_details(json_data,
                                  self.settings['providers'],
                                  self.settings['rating'],
