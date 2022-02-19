@@ -96,10 +96,15 @@ def get_bright_data_proxy(proxy_path):
     return proxy.strip()
 
 
-def log_error(path):
+def log_error(path, message=''):
     now = time.asctime()
-    text = f'{now}\n' \
-           f'{traceback.format_exc()}\n'
+    if message:
+        text = f'{now}\n' \
+               f'{message}' \
+               f'{traceback.format_exc()}\n'
+    else:
+        text = f'{now}\n' \
+               f'{traceback.format_exc()}\n'
     with open(path, 'a') as f:
         f.write(text)
 
@@ -188,7 +193,8 @@ class Emex:
                                  index
                                  )
             except Exception:
-                log_error(log_path)
+                message = f'URL: {url}'
+                log_error(log_path, message)
             finally:
                 self.ex.check_data()
             progress_bar_value_thread.start()
@@ -220,13 +226,13 @@ class Emex:
                 info_label_thread.start()
                 warning_message_thread.text_message = 'Не удалось сохранить данные'
                 warning_message_thread.start()
-                log_error(log_path)
+                log_error(log_path, 'Не удалось сохранить данные после закрытия файла')
         except Exception:
             info_label_thread.info_message = 'Не удалось сохранить данные'
             info_label_thread.start()
             warning_message_thread.text_message = 'Не удалось сохранить данные'
             warning_message_thread.start()
-            log_error(log_path)
+            log_error(log_path, 'Не удалось сохранить данные')
 
     def get_json_data(self, url, proxy=''):
         headers = Headers(headers=True).generate()
@@ -274,7 +280,8 @@ class Emex:
     def get_details(self, json_data, providers: list, rating: list, with_analogs: bool, columns, values, index):
         search_result = json_data['searchResult']
         no_results = search_result['noResults']
-        if no_results:
+        makes = search_result.get('makes', None)
+        if no_results or makes is None:
             if self.previous_no_results_index == -1:
                 self.previous_no_results_index = index
                 # print(f'previous_no_results_index: {self.previous_no_results_index}')
@@ -305,6 +312,12 @@ class Emex:
                     continue
                 self.get_detail_data(new_json_data, providers, rating, with_analogs, columns, values)
         else:
+            originals = search_result.get('originals', None)
+            if originals is None:
+                if self.previous_no_results_index == -1:
+                    self.previous_no_results_index = index
+                self.no_results_count += 1
+                return
             self.get_detail_data(json_data, providers, rating, with_analogs, columns, values)
         # self.ex.check_data()
 
