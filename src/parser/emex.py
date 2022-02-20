@@ -190,7 +190,8 @@ class Emex:
                                  self.settings['with_analogs'],
                                  df.columns,
                                  df.iloc[index],
-                                 index
+                                 index,
+                                 num
                                  )
             except Exception:
                 message = f'URL: {url}'
@@ -199,17 +200,19 @@ class Emex:
                 self.ex.check_data()
             progress_bar_value_thread.start()
 
-            if self.no_results_count > 2:
-                # print(f'restart from {self.previous_no_results_index}')
-                if self.settings['proxy_path']:
-                    self.excel_iter(self.previous_no_results_index)
-                else:
-                    info_label_thread.info_message = 'Блокировка\n' \
-                                                     'Завершение работы'
-                    info_label_thread.start()
-                    warning_message_thread.text_message = 'Блокировка'
-                    warning_message_thread.start()
-                return
+            # if self.no_results_count > 5:
+            #     # print(f'restart from {self.previous_no_results_index}')
+            #     if self.settings['proxy_path']:
+            #         # self.excel_iter(self.previous_no_results_index)
+            #         pass
+            #     else:
+            #         info_label_thread.info_message = 'Блокировка\n' \
+            #                                          'Завершение работы'
+            #         info_label_thread.start()
+            #         warning_message_thread.text_message = 'Блокировка'
+            #         warning_message_thread.start()
+            #         break
+                # return
         # print(f'TIME: {time.time() - self.start_time}')
         try:
             self.ex.write_exel(save_path, (True, 'max'))
@@ -224,7 +227,7 @@ class Emex:
             except Exception:
                 info_label_thread.info_message = 'Не удалось сохранить данные'
                 info_label_thread.start()
-                warning_message_thread.text_message = 'Не удалось сохранить данные'
+                warning_message_thread.text_message = 'Не удалось сохранить данные. Вероятно открыт файл сохранения'
                 warning_message_thread.start()
                 log_error(log_path, 'Не удалось сохранить данные после закрытия файла')
         except Exception:
@@ -277,7 +280,7 @@ class Emex:
             data = json.load(f)
         return data
 
-    def get_details(self, json_data, providers: list, rating: list, with_analogs: bool, columns, values, index):
+    def get_details(self, json_data, providers: list, rating: list, with_analogs: bool, columns, values, index, num):
         search_result = json_data['searchResult']
         no_results = search_result['noResults']
         makes = search_result.get('makes', None)
@@ -286,6 +289,7 @@ class Emex:
                 self.previous_no_results_index = index
                 # print(f'previous_no_results_index: {self.previous_no_results_index}')
             self.no_results_count += 1
+            # print(f'Не удалось получить данные для {num}. Счетчик: {self.no_results_count}')
             # if self.no_results_count > 2:
             #     print(f'restart from {self.previous_no_results_index}')
             #     if self.settings['proxy_path']:
@@ -308,7 +312,10 @@ class Emex:
                       f'&longitude=37.617635&latitude=55.755814'
                 # print(url)
                 new_json_data = self.get_json_data(url)
-                if new_json_data is None:
+                search_result = new_json_data['searchResult']
+                originals = search_result.get('originals', None)
+                if new_json_data is None or originals is None:
+                    # print(f'Не удалось получить данные для {num}')
                     continue
                 self.get_detail_data(new_json_data, providers, rating, with_analogs, columns, values)
         else:
