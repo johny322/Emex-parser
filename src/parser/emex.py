@@ -83,10 +83,10 @@ def check_bright_data_proxy(proxy):
         'https': proxy.strip()
     }
     try:
-        requests.get('https://icanhazip.com/', proxies=proxies, timeout=2, verify=False)
+        requests.get('http://lumtest.com/myip.json', proxies=proxies, timeout=3, verify=False)
         return True
     except Exception:
-        log_error(log_path)
+        log_error(log_path, "Ошибка при проверке прокси bright_data")
         return False
 
 
@@ -245,12 +245,16 @@ class Emex:
                 "https": proxy.strip()
             }
             try:
-                r = requests.get(url, headers=headers, proxies=proxies, timeout=3, verify=False)
+                ip = requests.get('http://lumtest.com/myip.json', proxies=proxies, timeout=3, verify=False).json().get('ip')
+                info_label_thread.info_message = ip
+                info_label_thread.start()
+                r = requests.get(url, headers=headers, proxies=proxies, timeout=4, verify=False)
                 self.create_opener_count = 0
                 return r.json()
             except (ConnectTimeout, Timeout):
+                # print('time')
                 self.create_opener_count += 1
-                if self.create_opener_count > 3:
+                if self.create_opener_count > 4:
                     self.create_opener_count = 0
                     return None
                 return self.get_json_data(url, proxy)
