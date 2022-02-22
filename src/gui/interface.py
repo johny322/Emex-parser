@@ -50,6 +50,7 @@ class MyApp(QWidget):
 
         self.finish_excel_path = QLineEdit()
         self.finish_excel_path.setPlaceholderText('Путь до финального файла')
+        self.finish_excel_path.setText('finish.xlsx')
         self.finish_excel_path.setReadOnly(True)
         self.finish_excel_btn = QToolButton()
         self.finish_excel_btn.setText('...')

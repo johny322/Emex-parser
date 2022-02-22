@@ -100,7 +100,7 @@ def log_error(path, message=''):
     now = time.asctime()
     if message:
         text = f'{now}\n' \
-               f'{message}' \
+               f'{message}\n' \
                f'{traceback.format_exc()}\n'
     else:
         text = f'{now}\n' \
@@ -136,6 +136,7 @@ class Emex:
         save_path = self.settings['save_path']
         proxy_path = self.settings['proxy_path']
         df = pd.read_excel(excel_path)
+        # print(df)
         if proxy_path:
             if self.settings['bright_data_proxy'] or self.settings['proxy_manager']:
                 proxy = get_bright_data_proxy(proxy_path)
@@ -215,7 +216,7 @@ class Emex:
                 # return
         # print(f'TIME: {time.time() - self.start_time}')
         try:
-            self.ex.write_exel(save_path, (True, 'max'))
+            self.ex.write_exel(save_path, (False, 'max'))
         except PermissionError:
             info_label_thread.info_message = 'Файл сохранения открыт. Закрытие...'
             info_label_thread.start()
@@ -223,7 +224,7 @@ class Emex:
             self.ex.close_excel_by_name(name)
             time.sleep(4)
             try:
-                self.ex.write_exel(save_path, (True, 'max'))
+                self.ex.write_exel(save_path, (False, 'max'))
             except Exception:
                 info_label_thread.info_message = 'Не удалось сохранить данные'
                 info_label_thread.start()

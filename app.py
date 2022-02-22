@@ -13,7 +13,7 @@ def log_error_with_tb(type, value, tback):
     now = time.asctime()
     traceback_text = ''.join(traceback.format_exception(type, value, tback))
     text = f'{now}\n' \
-           'КРИТИЧЕСКАЯ ОШИБКА' \
+           'КРИТИЧЕСКАЯ ОШИБКА\n' \
            f'{traceback_text}\n\n'
     with open(log_path, 'a') as f:
         f.write(text)
