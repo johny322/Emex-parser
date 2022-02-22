@@ -245,9 +245,14 @@ class Emex:
                 "https": proxy.strip()
             }
             try:
-                ip = requests.get('http://lumtest.com/myip.json', proxies=proxies, timeout=3, verify=False).json().get('ip')
-                info_label_thread.info_message = ip
-                info_label_thread.start()
+                # print(requests.get('http://lumtest.com/myip.json', proxies=proxies, timeout=3, verify=False).json())
+                # try:
+                #     ip = requests.get('http://lumtest.com/myip.json', proxies=proxies, timeout=3, verify=False).json().get('ip')
+                #     info_label_thread.info_message = ip
+                #     info_label_thread.start()
+                # except Exception:
+                #     info_label_thread.info_message = 'ip'
+                #     info_label_thread.start()
                 r = requests.get(url, headers=headers, proxies=proxies, timeout=4, verify=False)
                 self.create_opener_count = 0
                 return r.json()
@@ -289,6 +294,8 @@ class Emex:
         no_results = search_result['noResults']
         makes = search_result.get('makes', None)
         if no_results or makes is None:
+            info_label_thread.info_message = f"Не удалось получить данные для {num}"
+            info_label_thread.start()
             if self.previous_no_results_index == -1:
                 self.previous_no_results_index = index
                 # print(f'previous_no_results_index: {self.previous_no_results_index}')
@@ -325,6 +332,8 @@ class Emex:
         else:
             originals = search_result.get('originals', None)
             if originals is None:
+                info_label_thread.info_message = f"Не удалось получить данные для {num}"
+                info_label_thread.start()
                 if self.previous_no_results_index == -1:
                     self.previous_no_results_index = index
                 self.no_results_count += 1
