@@ -239,7 +239,7 @@ class Emex:
             log_error(log_path, 'Не удалось сохранить данные')
 
     def get_json_data(self, url, proxy=''):
-        headers = Headers(headers=True).generate()
+        # headers = Headers(headers=True).generate()
         if self.settings['bright_data_proxy'] or self.settings['proxy_manager']:
             proxies = {
                 "http": proxy.strip(),
@@ -254,7 +254,8 @@ class Emex:
                 # except Exception:
                 #     info_label_thread.info_message = 'ip'
                 #     info_label_thread.start()
-                r = requests.get(url, headers=headers, proxies=proxies, timeout=4, verify=False)
+                # r = requests.get(url, headers=headers, proxies=proxies, timeout=4, verify=False)
+                r = requests.get(url, proxies=proxies, timeout=4, verify=False)
                 self.create_opener_count = 0
                 return r.json()
             except (ConnectTimeout, Timeout):
@@ -264,10 +265,18 @@ class Emex:
                     self.create_opener_count = 0
                     return None
                 return self.get_json_data(url, proxy)
-            except Exception:
-                traceback.print_exc()
-                log_error(log_path)
-                return None
+            except Exception as e:
+                if 'time' in str(e):
+                    self.create_opener_count += 1
+                    if self.create_opener_count > 4:
+                        self.create_opener_count = 0
+                        log_error(log_path, "time in exception")
+                        return None
+                    return self.get_json_data(url, proxy)
+                else:
+                    # traceback.print_exc()
+                    log_error(log_path)
+                    return None
         else:
             try:
                 if proxy:
@@ -324,9 +333,11 @@ class Emex:
                       f'&longitude=37.617635&latitude=55.755814'
                 # print(url)
                 new_json_data = self.get_json_data(url)
+                if new_json_data is None:
+                    continue
                 search_result = new_json_data['searchResult']
                 originals = search_result.get('originals', None)
-                if new_json_data is None or originals is None:
+                if originals is None:
                     # print(f'Не удалось получить данные для {num}')
                     continue
                 self.get_detail_data(new_json_data, providers, rating, with_analogs, columns, values)
